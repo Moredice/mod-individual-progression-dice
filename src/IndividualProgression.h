@@ -16,6 +16,7 @@
 #include "QuestDef.h"
 #include "GameObject.h"
 #include "IWorld.h"
+#include "WorldSessionMgr.h"
 #include <regex>
 
 typedef std::unordered_map<uint32, uint32> questXpMapType;
@@ -51,11 +52,15 @@ enum BuffSpells
 
 enum ProgressionQuestIDs
 {
-    MIGHT_OF_KALIMDOR    = 8742,
-    QUEST_MORROWGRAIN    = 3803,
-    QUEST_TROLL_NECKLACE = 2881,
-    QUEST_DEADWOOD       = 6221,
-    QUEST_WINTERFALL     = 6241
+    QUEST_MORROWGRAIN                   = 3803,
+    QUEST_TROLL_NECKLACE                = 2881,
+    QUEST_DEADWOOD                      = 6221,
+    QUEST_WINTERFALL                    = 6241,
+    MIGHT_OF_KALIMDOR                   = 8742,     // "Scarab Lord" title + mount
+    QUEST_THE_BURNING_CRUSADE_A         = 7000101,  // TBC access, Alliance
+    QUEST_THE_BURNING_CRUSADE_H         = 7000111,  // TBC access, Horde
+    QUEST_THE_WRATH_OF_THE_LICH_KING_A  = 7100101,  // WOTLK access, Alliance
+    QUEST_THE_WRATH_OF_THE_LICH_KING_H  = 7100111   // WOTLK access, Alliance
 };
 
 enum ProgressionMaps
@@ -109,23 +114,26 @@ enum ProgressionSettings
 
 enum ProgressionState : uint8
 {
-    PROGRESSION_START           = 0,
+    PROGRESSION_START           = 0,  // ZG is now accessible here
     PROGRESSION_MOLTEN_CORE     = 1,
     PROGRESSION_ONYXIA          = 2,
     PROGRESSION_BLACKWING_LAIR  = 3,
     PROGRESSION_PRE_AQ          = 4,
-    PROGRESSION_AQ              = 5,
+    PROGRESSION_AQ              = 5,  // AQ20 and AQ40
     PROGRESSION_NAXX40          = 6,
-    PROGRESSION_TBC_TIER_1      = 7,  // Karazhan, Gruul's Lair, Magtheridon's Lair
-    PROGRESSION_TBC_TIER_2      = 8,  // Serpentshrine Cavern, Tempest Keep
-    PROGRESSION_TBC_TIER_3      = 9,  // Hyjal Summit and Black Temple
-    PROGRESSION_TBC_TIER_4      = 10, // Zul'Aman
-    PROGRESSION_TBC_TIER_5      = 11, // Sunwell Plateau
-    PROGRESSION_WOTLK_TIER_1    = 12, // WotLK Naxx, EoE, OS
-    PROGRESSION_WOTLK_TIER_2    = 13, // Ulduar
-    PROGRESSION_WOTLK_TIER_3    = 14, // TotC
-    PROGRESSION_WOTLK_TIER_4    = 15, // ICC
-    PROGRESSION_WOTLK_TIER_5    = 16  // Ruby Sanctum
+    PROGRESSION_TBC_LAUNCH      = 7,
+    PROGRESSION_TBC_TIER_1      = 8,  // Karazhan, Gruul's Lair, Magtheridon's Lair
+    PROGRESSION_TBC_TIER_2      = 9,  // Serpentshrine Cavern, Tempest Keep
+    PROGRESSION_TBC_TIER_3      = 10, // Hyjal Summit and Black Temple
+    PROGRESSION_TBC_TIER_4      = 11, // Zul'Aman
+    PROGRESSION_TBC_TIER_5      = 12, // Sunwell Plateau
+    PROGRESSION_WOTLK_LAUNCH    = 13,
+    PROGRESSION_WOTLK_TIER_1    = 14, // WotLK Naxx, EoE, OS
+    PROGRESSION_WOTLK_TIER_2    = 15, // Ulduar
+    PROGRESSION_WOTLK_TIER_3    = 16, // TotC
+    PROGRESSION_WOTLK_TIER_4    = 17, // ICC
+    PROGRESSION_WOTLK_TIER_5    = 18, // Ruby Sanctum
+    PROGRESSION_INFINITY        = 19
 };
 
 enum RandomDungeonIds : uint16

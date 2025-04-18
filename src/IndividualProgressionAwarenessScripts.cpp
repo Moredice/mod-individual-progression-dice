@@ -1,5 +1,36 @@
 #include "IndividualProgression.h"
 
+class gobject_ipp_wotlk_launch : public GameObjectScript
+{
+public:
+    gobject_ipp_wotlk_launch() : GameObjectScript("gobject_ipp_wotlk_launch") { }
+
+    struct gobject_ipp_wotlk_launchAI: GameObjectAI
+    {
+        explicit gobject_ipp_wotlk_launchAI(GameObject* object) : GameObjectAI(object) { };
+
+        bool CanBeSeen(Player const* player) override
+        {
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
+            {
+                return true;
+            }
+            
+            return (
+                sIndividualProgression->hasPassedProgression(target, PROGRESSION_TBC_TIER_5) &&
+                sIndividualProgression->isBeforeProgression(target, PROGRESSION_WOTLK_LAUNCH)
+            );
+        }
+    };
+
+    GameObjectAI* GetAI(GameObject* object) const override
+    {
+        return new gobject_ipp_wotlk_launchAI(object);
+    }
+};
+
 class gobject_ipp_wotlk : public GameObjectScript
 {
 public:
@@ -11,18 +42,51 @@ public:
 
         bool CanBeSeen(Player const* player) override
         {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
-            return sIndividualProgression->hasPassedProgression(target, PROGRESSION_TBC_TIER_5);
+            
+            return sIndividualProgression->hasPassedProgression(target, PROGRESSION_WOTLK_LAUNCH);
         }
     };
 
     GameObjectAI* GetAI(GameObject* object) const override
     {
         return new gobject_ipp_wotlkAI(object);
+    }
+};
+
+class gobject_ipp_tbc_launch : public GameObjectScript
+{
+public:
+    gobject_ipp_tbc_launch() : GameObjectScript("gobject_ipp_tbc_launch") { }
+
+    struct gobject_ipp_tbc_launchAI: GameObjectAI
+    {
+        explicit gobject_ipp_tbc_launchAI(GameObject* object) : GameObjectAI(object) { };
+
+        bool CanBeSeen(Player const* player) override
+        {
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
+            {
+                return true;
+            }
+            
+            return (
+                sIndividualProgression->hasPassedProgression(target, PROGRESSION_NAXX40) &&
+                sIndividualProgression->isBeforeProgression(target, PROGRESSION_TBC_LAUNCH)
+            );
+        }
+    };
+
+    GameObjectAI* GetAI(GameObject* object) const override
+    {
+        return new gobject_ipp_tbc_launchAI(object);
     }
 };
 
@@ -37,18 +101,51 @@ public:
 
         bool CanBeSeen(Player const* player) override
         {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
-            return sIndividualProgression->hasPassedProgression(target, PROGRESSION_NAXX40);
+            
+            return sIndividualProgression->hasPassedProgression(target, PROGRESSION_TBC_LAUNCH);
         }
     };
 
     GameObjectAI* GetAI(GameObject* object) const override
     {
         return new gobject_ipp_tbcAI(object);
+    }
+};
+
+class npc_ipp_tbc_launch : public CreatureScript
+{
+public:
+    npc_ipp_tbc_launch() : CreatureScript("npc_ipp_tbc_launch") { }
+
+    struct npc_ipp_tbc_launchAI: ScriptedAI
+    {
+        explicit npc_ipp_tbc_launchAI(Creature* creature) : ScriptedAI(creature) { };
+
+        bool CanBeSeen(Player const* player) override
+        {
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
+            {
+                return true;
+            }
+            
+            return (
+                sIndividualProgression->hasPassedProgression(target, PROGRESSION_NAXX40) &&
+                sIndividualProgression->isBeforeProgression(target, PROGRESSION_TBC_LAUNCH)
+            );
+        }
+    };
+
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new npc_ipp_tbc_launchAI(creature);
     }
 };
 
@@ -62,13 +159,15 @@ public:
         explicit npc_ipp_tbcAI(Creature* creature) : ScriptedAI(creature) { };
 
         bool CanBeSeen(Player const* player) override
-        {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+        {   
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
-            return sIndividualProgression->hasPassedProgression(target, PROGRESSION_NAXX40);
+
+            return sIndividualProgression->hasPassedProgression(target, PROGRESSION_TBC_LAUNCH);
         }
     };
 
@@ -89,11 +188,13 @@ public:
 
         bool CanBeSeen(Player const* player) override
         {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+            
             return sIndividualProgression->hasPassedProgression(target, PROGRESSION_TBC_TIER_3);
         }
     };
@@ -115,11 +216,13 @@ public:
 
         bool CanBeSeen(Player const* player) override
         {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+            
             return sIndividualProgression->hasPassedProgression(target, PROGRESSION_TBC_TIER_4);
         }
     };
@@ -141,11 +244,13 @@ public:
 
         bool CanBeSeen(Player const* player) override
         {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+            
             return sIndividualProgression->isBeforeProgression(target,PROGRESSION_TBC_TIER_3);
         }
     };
@@ -153,6 +258,37 @@ public:
     CreatureAI* GetAI(Creature* creature) const override
     {
         return new npc_ipp_tbc_pre_t4AI(creature);
+    }
+};
+
+class npc_ipp_wotlk_launch : public CreatureScript
+{
+public:
+    npc_ipp_wotlk_launch() : CreatureScript("npc_ipp_wotlk_launch") { }
+
+    struct npc_ipp_wotlk_launchAI: ScriptedAI
+    {
+        explicit npc_ipp_wotlk_launchAI(Creature* creature) : ScriptedAI(creature) { };
+
+        bool CanBeSeen(Player const* player) override
+        {
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
+            {
+                return true;
+            }
+            
+            return (
+                sIndividualProgression->hasPassedProgression(target, PROGRESSION_TBC_TIER_5) &&
+                sIndividualProgression->isBeforeProgression(target, PROGRESSION_WOTLK_LAUNCH)
+            );
+        }
+    };
+
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return new npc_ipp_wotlk_launchAI(creature);
     }
 };
 
@@ -167,12 +303,14 @@ public:
 
         bool CanBeSeen(Player const* player) override
         {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
-            return sIndividualProgression->hasPassedProgression(target, PROGRESSION_TBC_TIER_5);
+            
+            return sIndividualProgression->hasPassedProgression(target, PROGRESSION_WOTLK_LAUNCH);
         }
     };
 
@@ -193,11 +331,13 @@ public:
 
         bool CanBeSeen(Player const* player) override
         {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+            
             return sIndividualProgression->hasPassedProgression(target, PROGRESSION_WOTLK_TIER_1);
         }
     };
@@ -219,11 +359,13 @@ public:
 
         bool CanBeSeen(Player const* player) override
         {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+            
             return sIndividualProgression->hasPassedProgression(target, PROGRESSION_WOTLK_TIER_2);
         }
     };
@@ -245,11 +387,13 @@ public:
 
         bool CanBeSeen(Player const* player) override
         {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+            
             return sIndividualProgression->hasPassedProgression(target, PROGRESSION_WOTLK_TIER_3);
         }
     };
@@ -271,12 +415,14 @@ public:
 
         bool CanBeSeen(Player const* player) override
         {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
-            return sIndividualProgression->hasPassedProgression(target, PROGRESSION_BLACKWING_LAIR);
+            
+            return sIndividualProgression->hasPassedProgression(target, PROGRESSION_PRE_AQ);
         }
     };
 
@@ -297,7 +443,9 @@ public:
 
         bool CanBeSeen(Player const* player) override
         {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
@@ -305,7 +453,7 @@ public:
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+            
             return sIndividualProgression->hasPassedProgression(target, PROGRESSION_BLACKWING_LAIR);
         }
     };
@@ -326,12 +474,14 @@ public:
         explicit npc_ipp_naxx40AI(Creature* creature) : ScriptedAI(creature) { };
 
         bool CanBeSeen(Player const* player) override
-        {
-            if (player->IsGameMaster() || !sIndividualProgression->enabled)
+        {   
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
             {
                 return true;
             }
-            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+            
             return sIndividualProgression->hasPassedProgression(target, PROGRESSION_AQ);
         }
     };
@@ -341,20 +491,54 @@ public:
         return new npc_ipp_naxx40AI(creature);
     }
 };
+
+class gobject_ipp_naxx40 : public GameObjectScript
+{
+public:
+    gobject_ipp_naxx40() : GameObjectScript("gobject_ipp_naxx40") { }
+
+    struct gobject_ipp_naxx40AI: GameObjectAI
+    {
+        explicit gobject_ipp_naxx40AI(GameObject* object) : GameObjectAI(object) { };
+
+        bool CanBeSeen(Player const* player) override
+        {   
+            Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || target->IsGameMaster())
+            {
+                return true;
+            }
+            
+            return sIndividualProgression->hasPassedProgression(target, PROGRESSION_AQ);
+        }
+    };
+
+    GameObjectAI* GetAI(GameObject* object) const override
+    {
+        return new gobject_ipp_naxx40AI(object);
+    }
+};
+
 // Add all scripts in one
 void AddSC_mod_individual_progression_awareness()
 {
-    new npc_ipp_aq();
-//    new npc_ipp_naxx40(); // Not used yet
     new npc_ipp_ds2();
+    new npc_ipp_aq();
+    new npc_ipp_naxx40();
+    new npc_ipp_tbc_launch();
     new npc_ipp_tbc();
+    new npc_ipp_tbc_pre_t4();
     new npc_ipp_tbc_t4();
     new npc_ipp_tbc_t5();
-    new npc_ipp_tbc_pre_t4();
+    new npc_ipp_wotlk_launch();
     new npc_ipp_wotlk();
     new npc_ipp_wotlk_ulduar();
     new npc_ipp_wotlk_totc();
     new npc_ipp_wotlk_icc();
+    new gobject_ipp_naxx40();
+    new gobject_ipp_tbc_launch();
     new gobject_ipp_tbc();
-//    new gobject_ipp_wotlk(); // Not used yet
+    new gobject_ipp_wotlk_launch();
+    new gobject_ipp_wotlk();
 }

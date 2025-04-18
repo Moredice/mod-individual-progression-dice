@@ -16,7 +16,7 @@ private:
 public:
     IndividualPlayerProgression() : PlayerScript("IndividualProgression") { }
 
-    void OnLogin(Player* player) override
+    void OnPlayerLogin(Player* player) override
     {
         if (player->getClass() == CLASS_DEATH_KNIGHT && sIndividualProgression->deathKnightStartingProgression && !sIndividualProgression->hasPassedProgression(player, static_cast<ProgressionState>(sIndividualProgression->deathKnightStartingProgression)))
         {
@@ -29,21 +29,21 @@ public:
         sIndividualProgression->CheckAdjustments(player);
     }
 
-    void OnSetMaxLevel(Player* player, uint32& maxPlayerLevel) override
+    void OnPlayerSetMaxLevel(Player* player, uint32& maxPlayerLevel) override
     {
         if (!sIndividualProgression->enabled || isExcludedFromProgression(player))
         {
             return;
         }
 
-        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_NAXX40))
+        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_LAUNCH))
         {
             if (sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL) > 60)
             {
                 maxPlayerLevel = 60;
             }
         }
-        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5))
+        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_LAUNCH))
         {
             if (sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL) > 70)
             {
@@ -52,17 +52,17 @@ public:
         }
     }
 
-    void OnMapChanged(Player* player) override
+    void OnPlayerMapChanged(Player* player) override
     {
         sIndividualProgression->CheckAdjustments(player);
     }
 
-    void OnLevelChanged(Player* player, uint8 /*oldLevel*/) override
+    void OnPlayerLevelChanged(Player* player, uint8 /*oldLevel*/) override
     {
         sIndividualProgression->CheckAdjustments(player);
     }
 
-    void OnEquip(Player* player, Item* /*it*/, uint8 /*bag*/, uint8 /*slot*/, bool /*update*/) override
+    void OnPlayerEquip(Player* player, Item* /*it*/, uint8 /*bag*/, uint8 /*slot*/, bool /*update*/) override
     {
         sIndividualProgression->CheckAdjustments(player);
     }
@@ -72,25 +72,26 @@ public:
         sIndividualProgression->CheckAdjustments(player);
     }
 
-    bool ShouldBeRewardedWithMoneyInsteadOfExp(Player* player) override
+    bool OnPlayerShouldBeRewardedWithMoneyInsteadOfExp(Player* player) override
     {
         if (!sIndividualProgression->questMoneyAtLevelCap)
         {
             return false;
         }
         // Player is still in Vanilla content - give money at 60 level cap
-        return ((!sIndividualProgression->hasPassedProgression(player, PROGRESSION_NAXX40) && player->GetLevel() == 60) ||
+        return ((player->GetLevel() == 60) && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_LAUNCH)) ||
                 // Player is in TBC content - give money at 70 level cap
-                (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5) && player->GetLevel() == 70));
+                ((player->GetLevel() == 70) && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_LAUNCH));
     }
 
-    void OnAfterUpdateMaxHealth(Player* player, float& value) override
+    void OnPlayerAfterUpdateMaxHealth(Player* player, float& value) override
     {
-        // TODO: This should be adjust to use an aura like damage adjustment. This is more robust to update when changing equipment, etc.
+        // TODO: This should be adjusted to use an aura like damage adjustment. This is more robust to update when changing equipment, etc.
         if (!sIndividualProgression->enabled || isExcludedFromProgression(player))
         {
             return;
         }
+
         float gearAdjustment = 0.0;
         for (uint8 i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
         {
@@ -98,7 +99,7 @@ public:
                 sIndividualProgression->ComputeGearTuning(player, gearAdjustment, item->GetTemplate());
         }
         // Player is still in Vanilla content - give Vanilla health adjustment
-        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_NAXX40))
+        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_LAUNCH))
         {
             float adjustmentAmount = 1.0f - sIndividualProgression->vanillaHealthAdjustment;
             float applyPercent = ((player->GetLevel() - 10.0f) / 50.0f);
@@ -106,7 +107,7 @@ public:
             value *= computedAdjustment;
         }
             // Player is in TBC content - give TBC health adjustment
-        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5))
+        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_LAUNCH))
         {
             value *= (sIndividualProgression->tbcHealthAdjustment - gearAdjustment);
         }
@@ -117,7 +118,7 @@ public:
         }
     }
 
-    void OnQuestComputeXP(Player* player, Quest const* quest, uint32& xpValue) override
+    void OnPlayerQuestComputeXP(Player* player, Quest const* quest, uint32& xpValue) override
     {
         if (!sIndividualProgression->enabled || !sIndividualProgression->questXpFix || isExcludedFromProgression(player))
         {
@@ -134,28 +135,26 @@ public:
         }
     }
 
-    void OnGiveXP(Player* player, uint32& amount, Unit* /*victim*/, uint8 xpSource) override
+    void OnPlayerGiveXP(Player* player, uint32& amount, Unit* /*victim*/, uint8 xpSource) override
     {
         if (!sIndividualProgression->enabled || isExcludedFromProgression(player))
         {
             return;
         }
+
+        // Still award XP to pets - they won't be able to pass the player's level
+        Pet* pet = player->GetPet();
+        if (pet && xpSource == XPSOURCE_KILL)
+            pet->GivePetXP(player->GetGroup() ? amount / 2 : amount);
+
         // Player is still in Vanilla content - do not give XP past level 60
-        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_NAXX40) && player->GetLevel() >= 60)
+        if ((player->GetLevel() >= 60) && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_LAUNCH))
         {
-            // Still award XP to pets - they won't be able to pass the player's level
-            Pet* pet = player->GetPet();
-            if (pet && xpSource == XPSOURCE_KILL)
-                pet->GivePetXP(player->GetGroup() ? amount / 2 : amount);
             amount = 0;
         }
             // Player is in TBC content - do not give XP past level 70
-        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5) && player->GetLevel() >= 70)
+        else if ((player->GetLevel() >= 70) && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_LAUNCH))
         {
-            // Still award XP to pets - they won't be able to pass the player's level
-            Pet* pet = player->GetPet();
-            if (pet && xpSource == XPSOURCE_KILL)
-                pet->GivePetXP(player->GetGroup() ? amount / 2 : amount);
             amount = 0;
         }
     }
@@ -171,7 +170,7 @@ public:
         return (accountNameFound && std::regex_match(accountName, excludedAccountsRegex));
     }
 
-    bool OnBeforeTeleport(Player* player, uint32 mapid, float x, float y, float z, float /*orientation*/, uint32 /*options*/, Unit* /*target*/) override
+    bool OnPlayerBeforeTeleport(Player* player, uint32 mapid, float x, float y, float z, float /*orientation*/, uint32 /*options*/, Unit* /*target*/) override
     {
         if (!sIndividualProgression->enabled || player->IsGameMaster() || isExcludedFromProgression(player))
         {
@@ -195,7 +194,7 @@ public:
         }
         if (mapid == MAP_OUTLANDS)
         {
-            if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_NAXX40))
+            if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_LAUNCH))
             {
                 // The player may be in the Azuremyst area which is on the outlands map - check the area ID
                 return IsTBCRaceStartingZone(mapid, x, y, z);
@@ -211,7 +210,7 @@ public:
         {
             return false;
         }
-        if (mapid == MAP_NORTHREND && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5))
+        if (mapid == MAP_NORTHREND && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_LAUNCH))
         {
             return false;
         }
@@ -235,11 +234,11 @@ public:
         InstanceTemplate const* instanceTemplate = sObjectMgr->GetInstanceTemplate(mapid);
         if (instanceTemplate)
         {
-            if (instanceTemplate->Parent == MAP_OUTLANDS && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_NAXX40))
+            if (instanceTemplate->Parent == MAP_OUTLANDS && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_LAUNCH))
             {
                 return false;
             }
-            if (instanceTemplate->Parent == MAP_NORTHREND && mapid != MAP_NAXXRAMAS && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5))
+            if (instanceTemplate->Parent == MAP_NORTHREND && mapid != MAP_NAXXRAMAS && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_LAUNCH))
             {
                 return false;
             }
@@ -253,14 +252,9 @@ public:
         {
             return;
         }
+
         switch (quest->GetQuestId())
         {
-            case MIGHT_OF_KALIMDOR:
-                if (!sIndividualProgression->disableDefaultProgression)
-                {
-                    sIndividualProgression->UpdateProgressionState(player, PROGRESSION_PRE_AQ);
-                }
-                break;
             case QUEST_MORROWGRAIN:
             case QUEST_TROLL_NECKLACE:
             case QUEST_DEADWOOD:
@@ -271,10 +265,30 @@ public:
                     player->RemoveRewardedQuest(quest->GetQuestId());
                 }
                 break;
+            case MIGHT_OF_KALIMDOR:
+                if (!sIndividualProgression->disableDefaultProgression)
+                {
+                    sIndividualProgression->UpdateProgressionState(player, PROGRESSION_PRE_AQ);
+                }
+                break;
+            case QUEST_THE_BURNING_CRUSADE_A:
+            case QUEST_THE_BURNING_CRUSADE_H:
+                if (!sIndividualProgression->disableDefaultProgression)
+                {
+                    sIndividualProgression->UpdateProgressionState(player, PROGRESSION_TBC_LAUNCH);
+                }
+                break;
+            case QUEST_THE_WRATH_OF_THE_LICH_KING_A:
+            case QUEST_THE_WRATH_OF_THE_LICH_KING_H:
+                if (!sIndividualProgression->disableDefaultProgression)
+                {
+                    sIndividualProgression->UpdateProgressionState(player, PROGRESSION_WOTLK_LAUNCH);
+                }
+                break;
         }
     }
 
-    bool CanGroupInvite(Player* player, std::string& membername) override
+    bool OnPlayerCanGroupInvite(Player* player, std::string& membername) override
     {
         if (!sIndividualProgression->enabled || !sIndividualProgression->enforceGroupRules || isExcludedFromProgression(player))
         {
@@ -286,7 +300,7 @@ public:
         return (currentState == otherPlayerState);
     }
 
-    bool CanGroupAccept(Player* player, Group* group) override
+    bool OnPlayerCanGroupAccept(Player* player, Group* group) override
     {
         if (!sIndividualProgression->enabled || !sIndividualProgression->enforceGroupRules || isExcludedFromProgression(player))
         {
@@ -298,9 +312,7 @@ public:
         return (currentState == otherPlayerState);
     }
 
-
-
-    void OnCreatureKill(Player* killer, Creature* killed) override
+    void OnPlayerCreatureKill(Player* killer, Creature* killed) override
     {
         sIndividualProgression->checkKillProgression(killer, killed);
         Group* group = killer->GetGroup();
@@ -319,7 +331,7 @@ public:
         }
     }
 
-    bool OnUpdateFishingSkill(Player* player, int32 /*skill*/, int32 /*zone_skill*/, int32 chance, int32 roll) override
+    bool OnPlayerUpdateFishingSkill(Player* player, int32 /*skill*/, int32 /*zone_skill*/, int32 chance, int32 roll) override
     {
         if (!sIndividualProgression->enabled || !sIndividualProgression->fishingFix || isExcludedFromProgression(player))
             return true;
@@ -328,7 +340,7 @@ public:
         return true;
     }
 
-    void OnUpdateArea(Player* player, uint32 /*oldArea*/, uint32 newArea) override
+    void OnPlayerUpdateArea(Player* player, uint32 /*oldArea*/, uint32 newArea) override
     {
         switch (newArea) {
             case AREA_LIGHTS_HOPE:
@@ -358,8 +370,8 @@ public:
         }
     }
 
-    void OnQueueRandomDungeon(Player* player, uint32& rDungeonId) override
-{
+    void OnPlayerQueueRandomDungeon(Player* player, uint32& rDungeonId) override
+    {
     // List of exceptions for seasonal event dungeons
     std::set<uint32> seasonalEventDungeons = { 285, 286, 287, 288 };
     if (seasonalEventDungeons.find(rDungeonId) != seasonalEventDungeons.end())
@@ -375,21 +387,21 @@ public:
         return;
     }
 
-    if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_NAXX40))
+    if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_LAUNCH))
     {
         rDungeonId = RDF_CLASSIC;
     }
-    else if (rDungeonId == RDF_WRATH_OF_THE_LICH_KING && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5))
+    else if (rDungeonId == RDF_WRATH_OF_THE_LICH_KING && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_LAUNCH))
     {
         rDungeonId = RDF_THE_BURNING_CRUSADE;
     }
-    else if (rDungeonId == RDF_WRATH_OF_THE_LICH_KING_HEROIC && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5))
+    else if (rDungeonId == RDF_WRATH_OF_THE_LICH_KING_HEROIC && !sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_LAUNCH))
     {
         rDungeonId = RDF_THE_BURNING_CRUSADE_HEROIC;
     }
 }
 
-    bool CanEquipItem(Player* player, uint8 /*slot*/, uint16& /*dest*/, Item* pItem, bool /*swap*/, bool /*not_loading*/) override
+    bool OnPlayerCanEquipItem(Player* player, uint8 /*slot*/, uint16& /*dest*/, Item* pItem, bool /*swap*/, bool /*not_loading*/) override
     {
         if (sIndividualProgression->pvpGearRequirements)
         {
@@ -495,7 +507,6 @@ public:
     }
 };
 
-
 class IndividualPlayerProgression_PetScript : public PetScript
 {
 private:
@@ -509,11 +520,11 @@ private:
         {
             return;
         }
-        if (!sIndividualProgression->hasPassedProgression(pet->GetOwner(), PROGRESSION_NAXX40))
+        if (!sIndividualProgression->hasPassedProgression(pet->GetOwner(), PROGRESSION_TBC_LAUNCH))
         {
             AdjustVanillaStats(pet);
         }
-        else if (!sIndividualProgression->hasPassedProgression(pet->GetOwner(), PROGRESSION_TBC_TIER_5))
+        else if (!sIndividualProgression->hasPassedProgression(pet->GetOwner(), PROGRESSION_WOTLK_LAUNCH))
         {
             AdjustTBCStats(pet);
         }
@@ -610,11 +621,11 @@ public:
         }
         Player* player = isPet ? healer->GetOwner()->ToPlayer() : healer->ToPlayer();
         float gearAdjustment = computeTotalGearTuning(player);
-        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_NAXX40))
+        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_LAUNCH))
         {
             heal *= (sIndividualProgression->ComputeVanillaAdjustment(player->GetLevel(), sIndividualProgression->vanillaHealingAdjustment) - gearAdjustment);
         }
-        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5))
+        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_LAUNCH))
         {
             heal *= (sIndividualProgression->tbcHealingAdjustment - gearAdjustment);
         }
@@ -635,11 +646,11 @@ public:
         }
         Player* player = isPet ? attacker->GetOwner()->ToPlayer() : attacker->ToPlayer();
         float gearAdjustment = computeTotalGearTuning(player);
-        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_NAXX40))
+        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_LAUNCH))
         {
             damage *= (sIndividualProgression->ComputeVanillaAdjustment(player->GetLevel(), sIndividualProgression->vanillaPowerAdjustment) - gearAdjustment);
         }
-        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5))
+        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_LAUNCH))
         {
             damage *= (sIndividualProgression->tbcPowerAdjustment - gearAdjustment);
         }
@@ -661,11 +672,11 @@ public:
         }
         Player* player = isPet ? attacker->GetOwner()->ToPlayer() : attacker->ToPlayer();
         float gearAdjustment = computeTotalGearTuning(player);
-        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_NAXX40))
+        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_LAUNCH))
         {
             damage *= (sIndividualProgression->ComputeVanillaAdjustment(player->GetLevel(), sIndividualProgression->vanillaPowerAdjustment) - gearAdjustment);
         }
-        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5))
+        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_LAUNCH))
         {
             damage *= (sIndividualProgression->tbcPowerAdjustment - gearAdjustment);
         }
@@ -696,11 +707,11 @@ public:
         }
         Player* player = isPet ? attacker->GetOwner()->ToPlayer() : attacker->ToPlayer();
         float gearAdjustment = computeTotalGearTuning(player);
-        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_NAXX40))
+        if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_LAUNCH))
         {
             damage *= (sIndividualProgression->ComputeVanillaAdjustment(player->GetLevel(), sIndividualProgression->vanillaPowerAdjustment) - gearAdjustment);
         }
-        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_TBC_TIER_5))
+        else if (!sIndividualProgression->hasPassedProgression(player, PROGRESSION_WOTLK_LAUNCH))
         {
             damage *= (sIndividualProgression->tbcPowerAdjustment - gearAdjustment);
         }

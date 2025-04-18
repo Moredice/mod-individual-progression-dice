@@ -86,7 +86,7 @@ public:
                 return false; 
             }
 
-            return sIndividualProgression->isBeforeProgression(target, PROGRESSION_AQ);
+            return sIndividualProgression->isBeforeProgression(target, PROGRESSION_INFINITY);
         }
 
         void NextStage(uint32 timeUntil = 100)
@@ -163,7 +163,7 @@ public:
                 return;
 
             if (announce)
-                sWorld->SendZoneText(GLOBAL_TEXT_CHAMPION, player->GetName().c_str());
+                sWorldSessionMgr->SendZoneText(GLOBAL_TEXT_CHAMPION, player->GetName().c_str());
 
             eventTimer += 1000;
             eventStage = STAGE_OPEN_GATES;
@@ -215,12 +215,19 @@ public:
         {
 
             Player* target = ObjectAccessor::FindConnectedPlayer(player->GetGUID());
+
+            if (!sIndividualProgression->enabled || player->IsGameMaster())
+            {
+                return false;
+            }
+
             if (!target)
             {
                 return false; 
             }
-
-            return sIndividualProgression->isBeforeProgression(target, PROGRESSION_AQ);
+			
+            return sIndividualProgression->isBeforeProgression(target, PROGRESSION_PRE_AQ);
+            
         }
     };
 

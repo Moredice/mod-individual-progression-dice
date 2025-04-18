@@ -1444,25 +1444,37 @@ public:
     {
         if (player->GetMap()->GetSpawnMode() == RAID_DIFFICULTY_10MAN_HEROIC)
         {
-            // Naxx 40 cannot be exited via portals, as in Classic
-            return false;
+            switch (areaTrigger->entry)
+            {
+                // Naxx 10 and 25 exits
+                case 5196:
+                case 5197:
+                case 5198:
+                case 5199:
+                    player->TeleportTo(0, 3064.141f, -3873.055f, 129.519f, 2.973f);
+                    break;
+            }
         }
-        switch (areaTrigger->entry)
+        else
         {
-            // Naxx 10 and 25 exits
-            case 5196:
-                player->TeleportTo(571, 3679.25f, -1278.58f, 243.55f, 2.39f);
-                break;
-            case 5197:
-                player->TeleportTo(571, 3679.03f, -1259.68f, 243.55f, 3.98f);
-                break;
-            case 5198:
-                player->TeleportTo(571, 3661.14f, -1279.55f, 243.55f, 0.82f);
-                break;
-            case 5199:
-                player->TeleportTo(571, 3660.01f, -1260.99f, 243.55f, 5.51f);
-                break;
+            switch (areaTrigger->entry)
+            {
+                // Naxx 10 and 25 exits
+                case 5196:
+                    player->TeleportTo(571, 3679.25f, -1278.58f, 243.55f, 2.39f);
+                    break;
+                case 5197:
+                    player->TeleportTo(571, 3679.03f, -1259.68f, 243.55f, 3.98f);
+                    break;
+                case 5198:
+                    player->TeleportTo(571, 3661.14f, -1279.55f, 243.55f, 0.82f);
+                    break;
+                case 5199:
+                    player->TeleportTo(571, 3660.01f, -1260.99f, 243.55f, 5.51f);
+                    break;
+            }
         }
+
         return true;
     }
 };
